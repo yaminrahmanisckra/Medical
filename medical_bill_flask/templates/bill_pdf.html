@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 2.54cm;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            color: #000;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1.5px solid #000;
+            padding: 6px 10px;
+            font-size: 12pt;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        th {
+            background: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+        .center { text-align: center; }
+        .right { text-align: right; }
+        .bold { font-weight: bold; }
+        .cert-block { margin-top: 30px; margin-bottom: 30px; }
+        .signature {
+            margin-top: 80px;
+            text-align: right;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+        }
+        .sigline { line-height: 1.1; }
+        .cert-extra {
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 12pt;
+            line-height: 1.5;
+        }
+        .cert-extra div { margin-bottom: 0.5em; }
+    </style>
+</head>
+<body>
+    <h2 class="center" style="font-size:18pt;">MEDICAL BILL FORM</h2>
+    <div class="center" style="margin-bottom:10px;">
+        Medical Attendance Bill of <b>{{ display_name }}</b>, Ex-Election Commissioner, Bangladesh Election Commission (Separate Bill should be submitted for each patient).
+    </div>
+    <table>
+        <tr>
+            <th>SL No.</th>
+            <th>Invoice/Voucher No.</th>
+            <th>Date</th>
+            <th class="center">Taka</th>
+            <th>Name of Medicine</th>
+        </tr>
+        {% for key, entries in grouped_bills.items() %}
+            {% for entry in entries %}
+            <tr>
+                <td class="center">{{ entry.sl_no }}</td>
+                <td class="center">{{ entry.invoice_no }}</td>
+                <td class="center">{{ entry.date }}</td>
+                <td class="center">{{ entry.taka }}</td>
+                <td class="center">{{ entry.name_of_medicine }}</td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <td colspan="3" class="right bold">SUBTOTAL ({{ month_names[key]|upper }})</td>
+                <td class="center bold">{{ month_subtotals[key] }}</td>
+                <td></td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="3" class="right bold">GRAND TOTAL</td>
+            <td class="center bold">{{ grand_total }}</td>
+            <td></td>
+        </tr>
+    </table>
+    <div class="bold" style="font-size:13pt;">Total Taka {{ grand_total }}/-(Only {{ amount_words }} Taka)</div>
+    <div class="cert-block">
+        {% for line in certification %}
+            <div>{{ line }}</div>
+        {% endfor %}
+    </div>
+    <div class="signature">
+        {% for line in signature_block %}
+            <div class="sigline">{{ line }}</div>
+        {% endfor %}
+    </div>
+    <div class="cert-extra">
+        <div>(vii) Certified that the medicines, drugs etc. included in the vouchers detailed above for the total cost amounting of <b>Total Taka {{ grand_total }}/-(Only {{ amount_words }} Taka)</b> were prescribed by me and were essential for the recovery and restoration of the health of Rashida Sultana, Self and of those medicines, drugs etc. we are not a dietary nature.</div>
+        <div>(viii) Certified that neither these medicines, drugs etc. nor their effective substitutes were available at the time in the hospital.</div>
+        <div>(ix) Certified that consultation fee specified in the vouchers detailed above, amounting Tk.{{ grand_total }} were actually necessary for the proper diagnosis and the treatment of the patient.</div>
+        <div>(x) Certified that Rashida Sultana, Self whose signature is given above was attended to by me.</div>
+        <div>(xi) Certified that government Servant was attended at his residence owing to the absence remoteness of a suitable hospital or the severity of the illness and the amount of the cost of similar treatment as referred in sub-rule (2) of the Rule 8 is <b>Total Taka {{ grand_total }}/-(Only {{ amount_words }} Taka)</b>.</div>
+        <div>(xii) Certified that the treatment of the husband of Rashida Sultana, Election Commissioner is neither prenatal nor post-natal in nature.</div>
+    </div>
+    <div class="signature" style="margin-top: 40px; text-align: left;">
+        Signature of the Medical Attendant<br>
+        Registration No.<br>
+        Designation<br>
+        Post held
+    </div>
+</body>
+</html> 

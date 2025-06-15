@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Medical Bill Form</title>
+    <style>
+        body { font-family: 'Times New Roman', Times, serif; }
+        table, th, td { border: 1.5px solid black; border-collapse: collapse; }
+        th, td { padding: 6px 10px; font-size: 15px; }
+        th { background: #f0f0f0; }
+        .center { text-align: center; }
+        .right { text-align: right; }
+        .bold { font-weight: bold; }
+        .cert-block { margin-top: 30px; margin-bottom: 30px; }
+        .signature { margin-top: 80px; text-align: right; }
+        .button, button, input[type="submit"] {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 7px 18px;
+            font-size: 15px;
+            cursor: pointer;
+            margin-right: 8px;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+        .button:hover, button:hover, input[type="submit"]:hover {
+            background: #125ea2;
+        }
+        .import-form {
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .import-form input[type="file"] {
+            display: none;
+        }
+        .import-label {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 7px 18px;
+            font-size: 15px;
+            cursor: pointer;
+            margin-right: 8px;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .import-label:hover {
+            background: #125ea2;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fafbfc;
+            padding: 30px 30px 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+        }
+        .action-buttons {
+            margin-bottom: 18px;
+        }
+        .flash-messages {
+            color: #b71c1c;
+            margin-bottom: 10px;
+        }
+        .download-pdf-btn {
+            background: #43a047;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 22px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 18px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 6px rgba(67,160,71,0.08);
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+        .download-pdf-btn:hover {
+            background: #2e7031;
+        }
+        .reset-btn {
+            background: #d32f2f;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 7px 18px;
+            font-size: 15px;
+            cursor: pointer;
+            margin-right: 8px;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+        .reset-btn:hover {
+            background: #a31515;
+        }
+        .delete-btn {
+            background: #e53935;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 4px;
+            transition: background 0.2s;
+        }
+        .delete-btn:hover {
+            background: #b71c1c;
+        }
+        .edit-btn {
+            background: #ffd600;
+            color: #333;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 4px;
+            transition: background 0.2s;
+        }
+        .edit-btn:hover {
+            background: #ffe082;
+        }
+    </style>
+    <script>
+    function updateHeader() {
+        var select = document.getElementById('personSelect');
+        var value = select.value;
+        var header = document.getElementById('dynamicHeader');
+        if (value === 'rashida') {
+            header.innerHTML = 'Medical Attendance Bill of <b>Rashida Sultana</b>, Ex-Election Commissioner, Bangladesh Election Commission (Separate Bill should be submitted for each patient).';
+        } else {
+            header.innerHTML = 'Medical Attendance Bill of <b>Md. Moklasur Rohman, Husband of Rashida Sultana</b>, Ex-Election Commissioner, Bangladesh Election Commission (Separate Bill should be submitted for each patient).';
+        }
+    }
+    // Date picker to DD-MM-YYYY
+    document.addEventListener('DOMContentLoaded', function() {
+        var picker = document.getElementById('datePicker');
+        var input = document.getElementById('dateInput');
+        if (picker && input) {
+            picker.addEventListener('change', function() {
+                if (picker.value) {
+                    var parts = picker.value.split('-');
+                    if (parts.length === 3) {
+                        input.value = parts[2] + '-' + parts[1] + '-' + parts[0];
+                    }
+                }
+            });
+        }
+    });
+    </script>
+</head>
+<body>
+    <div class="container">
+    <h2 class="center">MEDICAL BILL FORM</h2>
+    <div class="center" style="margin-bottom:10px;" id="dynamicHeader">
+        Medical Attendance Bill of <b>{{ display_name }}</b>, Ex-Election Commissioner, Bangladesh Election Commission (Separate Bill should be submitted for each patient).
+    </div>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {% if edit_sl_no %}
+            <input type="hidden" name="edit_sl_no" value="{{ edit_sl_no }}">
+        {% endif %}
+        <p>
+            Select Bill For:
+            <select name="person" id="personSelect" required onchange="updateHeader()">
+                <option value="rashida" {% if person == 'rashida' %}selected{% endif %}>Rashida Sultana</option>
+                <option value="moklasur" {% if person == 'moklasur' %}selected{% endif %}>Md. Moklasur Rohman, Husband of Rashida Sultana</option>
+            </select>
+        </p>
+        <p>{{ form.invoice_no.label }} {{ form.invoice_no(size=20) }}</p>
+        <p>
+            Date: 
+            <input type="text" name="date" id="dateInput" placeholder="dd-mm-yyyy" pattern="\d{2}-\d{2}-\d{4}" style="width: 100px;" {% if edit_entry %}value="{{ edit_date_value }}"{% endif %}>
+            <input type="date" id="datePicker" style="width: 130px; margin-left: 8px;">
+        </p>
+        <p>{{ form.taka.label }} {{ form.taka(size=10) }}</p>
+        <p>{{ form.name_of_medicine.label }} {{ form.name_of_medicine(size=20) }}</p>
+        <p>
+            {% if edit_entry %}
+                <input type="submit" value="Update">
+            {% else %}
+                {{ form.submit() }}
+            {% endif %}
+        </p>
+    </form>
+    <a href="{{ url_for('reset') }}" class="reset-btn">Reset All Entries</a>
+    <hr>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flash-messages">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    <div class="action-buttons">
+        <a href="{{ url_for('export_bills') }}" class="button">Save Table</a>
+        <form action="{{ url_for('import_bills') }}" method="post" enctype="multipart/form-data" class="import-form">
+            <label for="importFile" class="import-label">Import Table</label>
+            <input type="file" id="importFile" name="file" accept="application/json" required onchange="this.form.submit()">
+        </form>
+        <a href="{{ url_for('download_pdf') }}" class="download-pdf-btn">Download PDF</a>
+    </div>
+    {% if bills %}
+    <table width="100%">
+        <tr>
+            <th>SL No.</th>
+            <th>Invoice/Voucher No.</th>
+            <th>Date</th>
+            <th>Taka</th>
+            <th>Name of Medicine</th>
+            <th>Action</th>
+        </tr>
+        {% set sl_no = 1 %}
+        {% for key, entries in grouped_bills.items() %}
+            {% for entry in entries %}
+            <tr>
+                <td class="center">{{ entry.display_sl_no }}</td>
+                <td class="center">{{ entry.invoice_no }}</td>
+                <td class="center">{{ entry.date }}</td>
+                <td class="center">{{ entry.taka }}</td>
+                <td class="center">{{ entry.name_of_medicine }}</td>
+                <td class="center">
+                    <form method="post" action="{{ url_for('edit_entry', sl_no=entry.sl_no) }}" style="display:inline;">
+                        <button type="submit" class="edit-btn">Edit</button>
+                    </form>
+                    <form method="post" action="{{ url_for('delete_entry', sl_no=entry.sl_no) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this entry?');">
+                        <button type="submit" class="delete-btn">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% set sl_no = sl_no + 1 %}
+            {% endfor %}
+            <tr>
+                <td colspan="3" class="right bold">SUBTOTAL ({{ month_names[key]|upper }})</td>
+                <td class="center bold">{{ month_subtotals[key] }}</td>
+                <td></td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="3" class="right bold">GRAND TOTAL</td>
+            <td class="center bold">{{ grand_total }}</td>
+            <td></td>
+        </tr>
+    </table>
+    <br>
+    <div class="bold" style="font-size:16px;">Total Taka {{ grand_total }}/-(Only {{ amount_words }} Taka)</div>
+    {% endif %}
+    </div>
+</body>
+</html> 

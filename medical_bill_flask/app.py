@@ -18,6 +18,9 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 import os
 from datetime import datetime
+from docx import Document
+from docx.shared import Pt, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -332,6 +335,178 @@ def download_pdf():
     doc.build(elements)
     buffer.seek(0)
     return send_file(buffer, as_attachment=True, download_name='medical_bill.pdf', mimetype='application/pdf')
+
+@app.route('/download_docx')
+def download_docx():
+    bills = session.get('bills', [])
+    month_subtotals = defaultdict(int)
+    for entry in bills:
+        year = entry['date'].split('-')[2]
+        month = entry['date'].split('-')[1]
+        key = f"{year}-{month}"
+        month_subtotals[key] += entry['taka']
+    grand_total = sum(entry['taka'] for entry in bills)
+    grouped_bills = group_bills_by_month(bills)
+    month_names = {k: month_year_name(k) for k in grouped_bills.keys()}
+
+    person = session.get('person', 'rashida')
+    if person == 'rashida':
+        display_name = 'Rashida Sultana'
+        signature_block = ['Rashida Sultana', 'Ex-Election Commissioner', 'Bangladesh Election Commission']
+    else:
+        display_name = 'Md. Moklasur Rohman, Husband of Rashida Sultana'
+        signature_block = ['Rashida Sultana', 'Ex-Election Commissioner', 'Bangladesh Election Commission']
+
+    amount_words = number_to_words(grand_total)
+
+    # Create a new Document
+    doc = Document()
+    
+    # Set margins
+    sections = doc.sections
+    for section in sections:
+        section.top_margin = Cm(2.54)
+        section.bottom_margin = Cm(2.54)
+        section.left_margin = Cm(2.54)
+        section.right_margin = Cm(2.54)
+
+    # Add title
+    title = doc.add_paragraph('MEDICAL BILL FORM')
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title.runs[0].font.size = Pt(18)
+    title.runs[0].font.bold = True
+    doc.add_paragraph()  # Add space after title
+
+    # Add header
+    header = doc.add_paragraph(f'Medical Attendance Bill of {display_name}, Ex-Election Commissioner, Bangladesh Election Commission (Separate Bill should be submitted for each patient).')
+    header.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    header.runs[0].font.size = Pt(12)
+    doc.add_paragraph()  # Add space after header
+
+    # Create table
+    table = doc.add_table(rows=1, cols=5)
+    table.style = 'Table Grid'
+    
+    # Set column widths
+    table.columns[0].width = Cm(2)  # SL No.
+    table.columns[1].width = Cm(4)  # Invoice/Voucher No.
+    table.columns[2].width = Cm(3)  # Date
+    table.columns[3].width = Cm(3)  # Taka
+    table.columns[4].width = Cm(5)  # Name of Medicine
+    
+    # Add header row
+    header_cells = table.rows[0].cells
+    headers = ['SL No.', 'Invoice/Voucher No.', 'Date', 'Taka', 'Name of Medicine']
+    for i, header in enumerate(headers):
+        header_cells[i].text = header
+        header_cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        header_cells[i].paragraphs[0].runs[0].font.bold = True
+        header_cells[i].paragraphs[0].runs[0].font.size = Pt(12)
+
+    # Add data rows
+    sl_no = 1
+    for key, entries in grouped_bills.items():
+        for entry in entries:
+            row_cells = table.add_row().cells
+            row_cells[0].text = str(sl_no)
+            row_cells[1].text = str(entry['invoice_no'])
+            row_cells[2].text = str(entry['date'])
+            row_cells[3].text = str(entry['taka'])
+            row_cells[4].text = str(entry['name_of_medicine'])
+            
+            # Center align all cells and set font size
+            for cell in row_cells:
+                cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                cell.paragraphs[0].runs[0].font.size = Pt(11)
+            
+            sl_no += 1
+        
+        # Add subtotal row
+        subtotal_row = table.add_row().cells
+        subtotal_row[2].text = f'SUBTOTAL ({month_names[key].upper()})'
+        subtotal_row[3].text = str(month_subtotals[key])
+        subtotal_row[2].paragraphs[0].runs[0].font.bold = True
+        subtotal_row[3].paragraphs[0].runs[0].font.bold = True
+        subtotal_row[2].paragraphs[0].runs[0].font.size = Pt(11)
+        subtotal_row[3].paragraphs[0].runs[0].font.size = Pt(11)
+        
+        # Center align subtotal cells
+        for cell in subtotal_row:
+            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Add grand total row
+    total_row = table.add_row().cells
+    total_row[2].text = 'GRAND TOTAL'
+    total_row[3].text = str(grand_total)
+    total_row[2].paragraphs[0].runs[0].font.bold = True
+    total_row[3].paragraphs[0].runs[0].font.bold = True
+    total_row[2].paragraphs[0].runs[0].font.size = Pt(11)
+    total_row[3].paragraphs[0].runs[0].font.size = Pt(11)
+    
+    # Center align total cells
+    for cell in total_row:
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    doc.add_paragraph()  # Add space after table
+
+    # Add total amount in words
+    total_para = doc.add_paragraph(f'Total Taka {grand_total}/-(Only {amount_words} Taka)')
+    total_para.runs[0].font.bold = True
+    total_para.runs[0].font.size = Pt(12)
+    doc.add_paragraph()  # Add space
+
+    # Add certification
+    cert_style = doc.styles.add_style('Certification', 1)
+    cert_style.font.size = Pt(12)
+    cert_style.font.name = 'Times New Roman'
+    
+    doc.add_paragraph('E. Fees for consultation for proper diagnosis and treatment of the patient vide Receipts detailed below:', style='Certification')
+    doc.add_paragraph('1. Certified that the amount claimed in the bill has actually been incurred for the treatment of myself.', style='Certification')
+    doc.add_paragraph('2. Certified that Md. Moklasur Rohman is my husband and he is not an employed govt. servant under the Govt. of Bangladesh and he does not claim any benefit in his own right.', style='Certification')
+
+    # Add signature block
+    doc.add_paragraph()  # Add space
+    for line in signature_block:
+        p = doc.add_paragraph(line)
+        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p.runs[0].font.size = Pt(12)
+
+    # Add extra certifications
+    doc.add_paragraph()
+    cert_extra = [
+        f"(vii) Certified that the medicines, drugs etc. included in the vouchers detailed above for the total cost amounting of Total Taka {grand_total}/-(Only {amount_words} Taka) were prescribed by me and were essential for the recovery and restoration of the health of Rashida Sultana, Self and of those medicines, drugs etc. we are not a dietary nature.",
+        "(viii) Certified that neither these medicines, drugs etc. nor their effective substitutes were available at the time in the hospital.",
+        f"(ix) Certified that consultation fee specified in the vouchers detailed above, amounting Tk.{grand_total} were actually necessary for the proper diagnosis and the treatment of the patient.",
+        "(x) Certified that Rashida Sultana, Self whose signature is given above was attended to by me.",
+        f"(xi) Certified that government Servant was attended at his residence owing to the absence remoteness of a suitable hospital or the severity of the illness and the amount of the cost of similar treatment as referred in sub-rule (2) of the Rule 8 is Total Taka {grand_total}/-(Only {amount_words} Taka).",
+        "(xii) Certified that the treatment of the husband of Rashida Sultana, Election Commissioner is neither prenatal nor post-natal in nature."
+    ]
+    for cert in cert_extra:
+        p = doc.add_paragraph(cert, style='Certification')
+
+    # Add medical attendant signature block
+    doc.add_paragraph()
+    for line in [
+        "Signature of the Medical Attendant",
+        "Registration No.",
+        "Designation",
+        "Post held"
+    ]:
+        p = doc.add_paragraph(line)
+        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p.runs[0].font.size = Pt(12)
+
+    # Save to BytesIO
+    docx_bytes = BytesIO()
+    doc.save(docx_bytes)
+    docx_bytes.seek(0)
+
+    return send_file(
+        docx_bytes,
+        as_attachment=True,
+        download_name='medical_bill.docx',
+        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
 
 @app.route('/export')
 def export_bills():

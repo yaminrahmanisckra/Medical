@@ -209,6 +209,7 @@
             <input type="file" id="importFile" name="file" accept="application/json" required onchange="this.form.submit()">
         </form>
         <a href="{{ url_for('download_pdf') }}" class="download-pdf-btn">Download PDF</a>
+        <a href="{{ url_for('download_docx') }}" class="download-pdf-btn" style="background: #2196F3;">Download DOCX</a>
     </div>
     {% if bills %}
     <table width="100%">

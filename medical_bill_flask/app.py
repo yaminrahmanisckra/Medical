@@ -513,12 +513,13 @@ def export_bills():
     bills = session.get('bills', [])
     person = session.get('person', 'rashida')
     today_str = datetime.now().strftime('%d-%m-%Y')
+    
+    # Set filename based on person
     if person == 'rashida':
         filename = f'Rashida_{today_str}.json'
-    elif person == 'moklasur':
-        filename = f'Moklasur_{today_str}.json'
     else:
-        filename = f'bills_{today_str}.json'
+        filename = f'Moklasur_{today_str}.json'
+    
     response = jsonify(bills)
     response.headers['Content-Disposition'] = f'attachment; filename={filename}'
     return response
@@ -540,6 +541,14 @@ def import_bills():
                 for idx, b in enumerate(data, 1):
                     b['sl_no'] = idx
                 session['bills'] = data
+                
+                # Set person based on filename
+                filename = file.filename.lower()
+                if 'rashida' in filename:
+                    session['person'] = 'rashida'
+                elif 'moklasur' in filename:
+                    session['person'] = 'moklasur'
+                
                 flash('Bills imported successfully!')
             else:
                 flash('Invalid file format!')

@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose the port
-EXPOSE 5000
+EXPOSE 10000
 
 # Start the app (adjust path if needed)
-CMD ["gunicorn", "medical_bill_flask.app:app", "--bind", "0.0.0.0:5000"] 
+CMD ["python", "medical_bill_flask/app.py"] 
